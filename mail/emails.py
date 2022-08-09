@@ -3,7 +3,7 @@ import os
 from utils import convert_date, get_size_format
 
 class Email:
-    def __init__(self, headers, parts, has_parts, labels, message, service, get_attachment=False):
+    def __init__(self, headers, parts, has_parts, labels, message, service, get_attachment, unwanted_attachments=[]):
         self.has_parts = has_parts
         self.headers = headers
         self.parts = parts
@@ -11,6 +11,7 @@ class Email:
         self.message = message
         self.service = service
         self.get_attachment = get_attachment
+        self.unwanted_attachments = unwanted_attachments
 
         self.is_unread = self.get_unread_status()
         self.sender = ''
@@ -21,18 +22,31 @@ class Email:
         self.is_html = False
         self.body = ''
         self.has_attachment = False
-        self.attachment = {}
+        # self.attachment = {}
+        self.attachment = []
         self.read_payload()
 
+    def is_unwanted_attachment(self, item):
+        for unwanted in self.unwanted_attachments:
+            if unwanted in item['filename'].lower():
+                return True
+        return False
+
     def download_attachment(self, folder_name='./data/'):
-        print("Saving the file:", self.attachment['filename'], "size:", self.attachment['file_size'])
-        attachment = self.service.users().messages() \
-                    .attachments().get(id=self.attachment['id'], userId='me', messageId=self.attachment['message_id']).execute()
-        data = attachment.get("data")
-        filepath = os.path.join(folder_name, self.attachment['filename'])
-        if data:
-            with open(filepath, "wb") as f:
-                f.write(urlsafe_b64decode(data))
+        for item in self.attachment:
+            if self.is_unwanted_attachment(item):
+                print(f"Skipping attachment with filename: '{item['filename']}'")
+                continue
+            else:
+                print("Saving file:", item['filename'], "size:", item['file_size'])
+                attachment = self.service.users().messages() \
+                            .attachments().get(id=item['id'], userId='me', messageId=item['message_id']).execute()
+                data = attachment.get("data")
+                filepath = os.path.join(folder_name, item['filename'])
+                if data:
+                    with open(filepath, "wb") as f:
+                        f.write(urlsafe_b64decode(data))
+
 
     def get_unread_status(self):
         if 'UNREAD' in self.labels:
@@ -98,10 +112,16 @@ class Email:
                                 # we get the attachment ID 
                                 # and make another request to get the attachment itself
                                 self.has_attachment = True
-                                self.attachment['filename'] = filename
-                                self.attachment['file_size'] = get_size_format(file_size)
-                                self.attachment['id'] = body.get("attachmentId")
-                                self.attachment['message_id'] = message['id']
+                                # self.attachment['filename'] = filename
+                                # self.attachment['file_size'] = get_size_format(file_size)
+                                # self.attachment['id'] = body.get("attachmentId")
+                                # self.attachment['message_id'] = message['id']
+                                attach = {}
+                                attach['filename'] = filename
+                                attach['file_size'] = get_size_format(file_size)
+                                attach['id'] = body.get("attachmentId")
+                                attach['message_id'] = message['id']
+                                self.attachment.append(attach)
                                 # print("Saving the file:", filename, "size:", get_size_format(file_size))
                                 # attachment = self.service.users().messages() \
                                 #             .attachments().get(id=attachment_id, userId='me', messageId=message['id']).execute()

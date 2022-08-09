@@ -81,10 +81,10 @@ def convert_money(string):
     except ValueError:
         print(f"Could not convert {string} to money")
     # finally:
-        if op_amount:
-            return op_amount
-        else:
-            print(f"Could not convert {string} to money")
+    if op_amount:
+        return op_amount
+    else:
+        print(f"Could not convert {string} to money")
 
 def string_to_datetime(string):
     if type(string) is str:
@@ -118,10 +118,23 @@ def is_num(string):
     else:
         return False
 
-def last_pdf():
+def list_pdfs():
     list_of_files = glob.glob('./data/*.pdf') # * means all if need specific format then *.csv
     if list_of_files:
-        latest_file = max(list_of_files, key=os.path.getctime)
-        return latest_file
+        return list_of_files
     else:
         print("No PDF files found.")
+        return None
+
+def last_pdf():
+    list_of_files = list_pdfs()
+    if list_of_files is not None:
+        latest_file = max(list_of_files, key=os.path.getctime)
+        return latest_file
+
+def dict_to_list(dic):
+    if isinstance(dic, dict):
+        return [item for item in dic.values()]
+    elif isinstance(dic, list):
+        return [list(item.values()) for item in dic]
+    print(f"To convert dictionary to list, input must be dict, not {type(dic)}")

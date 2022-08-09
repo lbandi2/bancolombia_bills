@@ -5,7 +5,7 @@ from datetime import datetime
 import math
 
 from utils import is_num, utc_to_local, convert_money, string_to_date
-from db_sql import DBCard
+from db.db_main import DBCard
 
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
