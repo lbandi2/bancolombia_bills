@@ -1,10 +1,9 @@
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 from pdf.pdf_main import PDF
 from db.db_main import DBBill, DBCard
-# from file_upload.mega_fs import MegaFile
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -15,7 +14,6 @@ class Bill:
         self.pdf_file = pdf_file
         print(f"Processing {self.pdf_file}..")
         self.pdf_password = self.get_password()
-        # self.file_link = self.upload_pdf()
         self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, date_received=TODAY)
         if push_to_db:
             self.push_to_db()

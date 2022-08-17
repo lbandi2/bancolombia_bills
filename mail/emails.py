@@ -77,33 +77,6 @@ class Email:
                     self.is_html = True
                     self.body = urlsafe_b64decode(data)
                 else:
-                    # attachment other than a plain text or HTML
-                    # for part_header in part_headers:
-                    #     part_header_name = part_header.get("name")
-                    #     part_header_value = part_header.get("value")
-                    #     if part_header_name == "Content-Disposition":
-                    #         if "attachment" in part_header_value:
-                    #             self.has_attachment = True
-                    #             self.attachment = filename
-
-                    # for part_header in part_headers:
-                    #     part_header_name = part_header.get("name")
-                    #     part_header_value = part_header.get("value")
-                    #     if part_header_name == "Content-Disposition":
-                    #         if "attachment" in part_header_value:
-                    #             # we get the attachment ID 
-                    #             # and make another request to get the attachment itself
-                    #             self.has_attachment = True
-                    #             print("Saving the file:", filename, "size:", get_size_format(file_size))
-                    #             attachment_id = body.get("attachmentId")
-                    #             attachment = self.service.users().messages() \
-                    #                         .attachments().get(id=attachment_id, userId='me', messageId=message['id']).execute()
-                    #             data = attachment.get("data")
-                    #             filepath = os.path.join(folder_name, filename)
-                    #             if data:
-                    #                 with open(filepath, "wb") as f:
-                    #                     f.write(urlsafe_b64decode(data))
-
                     for part_header in part_headers:
                         part_header_name = part_header.get("name")
                         part_header_value = part_header.get("value")
@@ -112,25 +85,12 @@ class Email:
                                 # we get the attachment ID 
                                 # and make another request to get the attachment itself
                                 self.has_attachment = True
-                                # self.attachment['filename'] = filename
-                                # self.attachment['file_size'] = get_size_format(file_size)
-                                # self.attachment['id'] = body.get("attachmentId")
-                                # self.attachment['message_id'] = message['id']
                                 attach = {}
                                 attach['filename'] = filename
                                 attach['file_size'] = get_size_format(file_size)
                                 attach['id'] = body.get("attachmentId")
                                 attach['message_id'] = message['id']
                                 self.attachment.append(attach)
-                                # print("Saving the file:", filename, "size:", get_size_format(file_size))
-                                # attachment = self.service.users().messages() \
-                                #             .attachments().get(id=attachment_id, userId='me', messageId=message['id']).execute()
-                                # data = attachment.get("data")
-                                # filepath = os.path.join(folder_name, filename)
-                                # if data:
-                                #     with open(filepath, "wb") as f:
-                                #         f.write(urlsafe_b64decode(data))
-
 
     def read_payload(self):
         if self.headers:

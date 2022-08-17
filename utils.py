@@ -80,7 +80,6 @@ def convert_money(string):
             print("didn't pass re.match")
     except ValueError:
         print(f"Could not convert {string} to money")
-    # finally:
     if op_amount:
         return op_amount
     else:
@@ -105,18 +104,18 @@ def regexp_in_list(source, items_list, index=1):
                     return match
     return None
 
-def is_num(string):
-    try:
-        negative_form = ''
-        if re.search("(\.|)\d{2}-", string):
-            negative_form = re.search("(\.|)\d{2}-", string).group()
-        string = string.replace(negative_form, '').replace(',', '').replace('.', '')
-        if string.isdigit():
-            return True
-    except AttributeError:
-        return False
-    else:
-        return False
+# def is_num(string):
+#     try:
+#         negative_form = ''
+#         if re.search("(\.|)\d{2}-", string):
+#             negative_form = re.search("(\.|)\d{2}-", string).group()
+#         string = string.replace(negative_form, '').replace(',', '').replace('.', '')
+#         if string.isdigit():
+#             return True
+#     except AttributeError:
+#         return False
+#     else:
+#         return False
 
 def list_pdfs():
     list_of_files = glob.glob('./data/*.pdf') # * means all if need specific format then *.csv
@@ -133,8 +132,10 @@ def last_pdf():
         return latest_file
 
 def dict_to_list(dic):
+    "Takes either a list of dictionaries or a dictionary and returns a list of values"
     if isinstance(dic, dict):
         return [item for item in dic.values()]
     elif isinstance(dic, list):
         return [list(item.values()) for item in dic]
     print(f"To convert dictionary to list, input must be dict, not {type(dic)}")
+

@@ -7,6 +7,7 @@ import re
 from utils import utc_to_local, convert_money
 from pdf.pdf_page import PDFPage
 from db.db_main import DBCard
+#TODO: remove password from pdf file
 from file_upload.mega_fs import MegaFile
 
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
