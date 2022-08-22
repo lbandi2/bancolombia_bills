@@ -30,6 +30,18 @@ class DBCard(DB):
         return None
 
 
+class DBCardOp(DB):
+    DB_CARD_OPS = os.getenv('DBSQL_TABLE_CARD_OPERATIONS')
+    VALIDATION = ['date', 'entity', 'amount', 'card_id']
+
+    def __init__(self, validation_fields=VALIDATION, table=DB_CARD_OPS):
+        super().__init__(table, validation_fields)
+
+    def matching_records(self, desde, hasta, card_id):
+        query = f"SELECT * FROM {self.table} WHERE date between '{desde}' and '{hasta}' AND card_id='{card_id}'"
+        records = self.connect('fetch', query)
+        return records
+
 class DBBillOp(DB):
     DB_BILL_OPS = os.getenv('DBSQL_TABLE_BILL_OPERATIONS')
     VALIDATION = ['date', 'name', 'authorization', 'original_value', 'bill_id', 'dues']

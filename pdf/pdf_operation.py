@@ -8,6 +8,7 @@ class PDFOperation:
         self.original_line = line
         self.line = line
         self.values = {}
+        # TODO: Compare operation to db operations to set is_matched before proceeding
         self.get_values()
 
     def get_values(self):
@@ -21,9 +22,9 @@ class PDFOperation:
         self.values['cargos_y_abonos'] = self.get_last_value()
         self.values['tasa_ea_facturada'] = self.get_tasa_facturada()
         self.values['tasa_pactada'] = self.get_tasa_pactada()
-        # print("line before original value", self.line)
         self.values['valor_original'] = self.get_last_value()
         self.values['nombre'] = self.get_nombre()
+        self.values['is_matched'] = False
 
     def get_tasa_facturada(self):
         exp = re.compile(r'(\d{2}\,\d{4})')
@@ -53,32 +54,13 @@ class PDFOperation:
         for item in self.line.split(" "):
             if exp.match(item):
                 self.line = self.line.replace(f'{item} ', '')
-                # fecha = datetime.strptime(item, "%d/%m/%Y").isoformat()
                 fecha = utc_to_local(datetime.strptime(item, '%d/%m/%Y'))
                 return fecha
 
     def get_nombre(self):
         return self.line.title().strip()
-        # nombre = ''
-        # for item in self.line.split(" "):
-        #     if not is_num(item):
-        #         nombre += f"{item} "
-        # else:
-        #     self.line = self.line.replace(f'{nombre}', '')
-        #     return nombre.strip()
-
-        # words = []
-        # for index, x in enumerate(self.line.split(" ")): # this doesn't work
-        #     if ',' not in x and '.' not in x:
-        #         words.append(index)
-        # print(words)
-        # nombre = " ".join(self.line.split(" ")[words[0]:words[-1]+1])
-        # self.line = self.line.replace(f'{nombre}', '')
-        # # print(nombre)
-        # return nombre.strip()
 
     def get_tipo(self):
-        # num = len(self.line.split(' '))
         taxes = [
             'INTERESES CORRIENTES',
             'INTERESES MORA',
@@ -91,15 +73,6 @@ class PDFOperation:
             'ABONO DEBITO POR MORA'
         ]
 
-        # if '-' in self.line.split(' ')[-2]:
-        #     return 'payment'
-        # elif 'INTERESES CORRIENTES' in self.line\
-        #     or 'INTERESES MORA' in self.line\
-        #     or 'GMF JURIDICO' in self.line\
-        #     or 'CUOTA DE MANEJO' in self.line:
-        #     return 'tax'
-        # else:
-        #     return 'expense'
         for tax in taxes:
             if tax in self.line:
                 return 'tax'

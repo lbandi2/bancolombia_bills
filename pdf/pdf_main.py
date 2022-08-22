@@ -13,7 +13,7 @@ from file_upload.mega_fs import MegaFile
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
 class PDF:
-    def __init__(self, file, password, date_received=TODAY):
+    def __init__(self, file, password, date_received=TODAY, upload=False):
         self.date_received = date_received
         self.file = file
         self.filename = file.split('/')[-1]
@@ -36,7 +36,8 @@ class PDF:
         # self.find_min_pay()
         self.is_valid = self.validate()
         if self.validate():
-            self.file_link = self.upload_pdf() #TODO: fix
+            if upload:
+                self.file_link = self.upload_pdf()
         self.bill_db_fields = self.get_bill_db_fields()
         self.ops_db_fields = self.get_ops_db_fields()
         self.bill_db_formatted = self.format_bill_for_db()
@@ -127,7 +128,8 @@ class PDF:
                     'debits_and_credits': item['cargos_y_abonos'],
                     'deferred_balance': item['saldo_a_diferir'],
                     'dues': item['cuotas'],
-                    'is_matched': False
+                    # 'is_matched': False
+                    'is_matched': item['is_matched']
                     # self.bill_id
                 }
             )

@@ -18,8 +18,6 @@ class PDFPage:
             if len(exp) == 2:
                 desde = exp[0]
                 hasta = exp[1]
-                # desde_date = utc_to_local(datetime.strptime(desde, '%d/%m/%Y')).isoformat()
-                # hasta_date = utc_to_local(datetime.strptime(hasta, '%d/%m/%Y')).isoformat()
                 desde_date = utc_to_local(datetime.strptime(desde, '%d/%m/%Y'))
                 hasta_date = utc_to_local(datetime.strptime(hasta, '%d/%m/%Y'))
                 return [desde_date, hasta_date]

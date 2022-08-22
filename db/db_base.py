@@ -195,4 +195,5 @@ class DB:
 
     def execute_insert_many(self, query, items):
         records = [dict_to_list(items)]   # convert items to list before inserting when only one record
+        # print(records)
         self.connect('execute_many', query, records)
