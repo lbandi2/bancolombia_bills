@@ -8,23 +8,25 @@ class PDFOperation:
         self.original_line = line
         self.line = line
         self.values = {}
-        # TODO: Compare operation to db operations to set is_matched before proceeding
         self.get_values()
 
+    def __repr__(self):
+        return f'[{"MATCHED" if self.is_matched else "NOT MATCHED"}] {self.fecha.strftime("%Y-%m-%d")} {self.nombre} {self.cargos_y_abonos}'
+
     def get_values(self):
-        self.values['autorizacion'] = self.get_autorizacion()
-        self.values['fecha'] = self.get_fecha().date()
-        self.values['cuotas'] = self.get_cuotas()
-        self.values['tipo'] = self.get_tipo()
-        self.values['saldo_a_diferir'] = self.get_last_value()
-        if self.values['cuotas'] == '0':
-            self.values['saldo_a_diferir'] = 0.0
-        self.values['cargos_y_abonos'] = self.get_last_value()
-        self.values['tasa_ea_facturada'] = self.get_tasa_facturada()
-        self.values['tasa_pactada'] = self.get_tasa_pactada()
-        self.values['valor_original'] = self.get_last_value()
-        self.values['nombre'] = self.get_nombre()
-        self.values['is_matched'] = False
+        self.autorizacion = self.get_autorizacion()
+        self.fecha = self.get_fecha().date()
+        self.cuotas = self.get_cuotas()
+        self.tipo = self.get_tipo()
+        self.saldo_a_diferir = self.get_last_value()
+        if self.cuotas == '0':
+            self.saldo_a_diferir = 0.0
+        self.cargos_y_abonos = self.get_last_value()
+        self.tasa_ea_facturada = self.get_tasa_facturada()
+        self.tasa_pactada = self.get_tasa_pactada()
+        self.valor_original = self.get_last_value()
+        self.nombre = self.get_nombre()
+        self.is_matched = False
 
     def get_tasa_facturada(self):
         exp = re.compile(r'(\d{2}\,\d{4})')
@@ -84,7 +86,6 @@ class PDFOperation:
 
         if '-' in self.line.split(' ')[-2]:
             return 'reimbursement'
-        
         return 'expense'
     
     def get_cuotas(self):

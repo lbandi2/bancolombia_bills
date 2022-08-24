@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 from pdf.pdf_main import PDF
 from db.db_main import DBBill, DBCard
-from compare.compare import Compare
 
 load_dotenv()
 
@@ -28,19 +27,6 @@ class Bill:
     def push_to_db(self):
         if self.pdf_content.is_valid:
             db = DBBill()
-            # TODO: compare pdf to period operations (try comparing after db_push) # this doesn't work
-            comparison = Compare(self.pdf_content)
-            if len(comparison.unmatched) != 0:
-                self.pdf_content.has_inconsistency = True
-                self.pdf_content.bill_db_formatted['has_inconsistency'] = True
-            for index, op in enumerate(self.pdf_content.operations):
-                if op in comparison.matched:
-                    self.pdf_content.operations[index]['is_matched'] = True
-                    self.pdf_content.ops_db_formatted[index]['is_matched'] = True
-                    # print(f"Matched to DB: {op}")
-
-            # print(self.pdf_content.operations) #temp #TODO: this is TRUE
-
             db.push_to_db(self.pdf_content)
             print(f"Finished processing {self.pdf_file}")
         else:

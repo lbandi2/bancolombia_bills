@@ -1,16 +1,21 @@
 import re
 from datetime import datetime
+from xmlrpc.client import _iso8601_format
 
 from utils import utc_to_local
 from pdf.pdf_operation import PDFOperation
+from pdf.pdf_op_compare import Compare
 
 class PDFPage:
-    def __init__(self, content):
+    def __init__(self, content, card_id):
         self.content = content
+        self.card_id = card_id
         self.cargos_prev = []
-        self.period = self.find_period()
+        self.desde = self.find_period()[0]
+        self.hasta = self.find_period()[1]
         self.operations = self.parse_page()
         self.num_operations = len(self.operations)  # revisar para que solo queden las compras
+        # TODO: Compare operation to db operations to set is_matched before proceeding
 
     def find_period(self):
         for index, item in enumerate(self.content.split('\n')):
@@ -36,40 +41,22 @@ class PDFPage:
             line = self.fix_authorization(line)
             if exp.match(line):
                 operation = PDFOperation(line)
-                ops.append(operation.values)
+                compare = Compare(operation, self.desde, self.hasta, self.card_id)
+                if compare.is_matched:
+                    operation.is_matched = True
+                ops.append(operation)
         return ops
-
-    # def remove_operation(self, lst, op):
-    #     for index, item in enumerate(lst):
-    #         if item['autorizacion'] == op['autorizacion']:
-    #             if item['valor_original'] == op['valor_original']:
-    #                 if item['nombre'] == op['nombre']:
-    #                     lst.pop(index)
-    #     return lst
-
-    # def check_duplicates(self, operations):  #TODO: This fails, need to redo it
-    #     cargos_prev = []
-    #     final_lst = []
-    #     for op in operations:
-    #         if op['autorizacion'] == '000000':
-    #             final_lst.append(op)
-    #         elif op['autorizacion'] not in cargos_prev:
-    #             cargos_prev.append(op['autorizacion'])
-    #             final_lst.append(op)
-    #         elif op['autorizacion'] in cargos_prev:   # check if duplicate, then remove previous
-    #             self.remove_operation(final_lst, op)
-    #     return final_lst
 
     def check_duplicates(self, operations):
         final_lst = []
         for op in operations:
-            if op['autorizacion'] == '000000':
+            if op.autorizacion == '000000':
                 final_lst.append(op)
             else:
                 for prev_op in final_lst:
-                    if prev_op['autorizacion'] == op['autorizacion']:
-                        if prev_op['nombre'] == op['nombre']:
-                            if float(prev_op['cargos_y_abonos']) + float(op['cargos_y_abonos']) == 0:
+                    if prev_op.autorizacion == op.autorizacion:
+                        if prev_op.nombre == op.nombre:
+                            if float(prev_op.cargos_y_abonos) + float(op.cargos_y_abonos) == 0:
                                 final_lst.remove(prev_op)
                 else:
                     final_lst.append(op)
@@ -77,6 +64,5 @@ class PDFPage:
 
     def parse_page(self):
         all_operations = self.find_operations()
-        # operations = self.check_duplicates(all_operations)
         operations = all_operations
         return operations

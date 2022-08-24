@@ -27,8 +27,8 @@ class PDF:
         self.open_file()
         self.card_id = self.get_card_id()
         self.card_owner = self.get_card_owner()
-        self.desde = self.pages[0].period[0]
-        self.hasta = self.pages[0].period[1]
+        self.desde = self.pages[0].desde
+        self.hasta = self.pages[0].hasta
         self.due_date = self.find_duedate()
         self.num_pages = len(self.pages)
         self.operations = self.get_all_operations()
@@ -42,7 +42,15 @@ class PDF:
         self.ops_db_fields = self.get_ops_db_fields()
         self.bill_db_formatted = self.format_bill_for_db()
         self.ops_db_formatted = self.format_ops_for_db()
-    
+
+    def get_card_id(self):
+        card_num = self.filename.split('_')[-1].replace('.pdf', '')
+        return self.db_cards.card_id(card_num)
+
+    def get_card_owner(self):
+        card_num = self.filename.split('_')[-1].replace('.pdf', '')
+        return self.db_cards.card_owner(card_num)
+
     def validate(self):
         if self.due_date is None:
             return False
@@ -59,26 +67,10 @@ class PDF:
         try:
             with pdfplumber.open(f'{self.file}', password=self.password) as pdf:
                 for item in pdf.pages:
-                    page = PDFPage(item.extract_text())
+                    page = PDFPage(item.extract_text(), self.get_card_id())
                     self.pages.append(page)
         except pdfdocument.PDFPasswordIncorrect:
             raise ValueError(f"[PDF] Incorrect password '{self.password}', try again.")
-
-    def get_bill_db_fields(self):
-        return [
-            'bill_id', 
-            'date_received', 
-            'start_date', 
-            'end_date', 
-            'due_date',
-            'min_pay', 
-            'total_pay', 
-            'installments_pay', 
-            'file_link', 
-            'is_paid', 
-            'card_id', 
-            'has_inconsistency'
-            ]
 
     def format_bill_for_db(self):
         result = {
@@ -97,60 +89,43 @@ class PDF:
             }
         return result
 
-    def get_ops_db_fields(self):
-        return [
-            'date',
-            'type',
-            'authorization',
-            'name', 
-            'original_value', 
-            'agreed_rate', 
-            'billed_rate', 
-            'debits_and_credits', 
-            'deferred_balance', 
-            'dues', 
-            'is_matched', 
-            'bill_id'  # this id bill_id from db, not object
-        ]
+    def get_bill_db_fields(self):
+        return list(self.format_bill_for_db().keys())
 
     def format_ops_for_db(self):
         result = []
         for item in self.operations:
             result.append(
                 {
-                    'date': item['fecha'],
-                    'type': item['tipo'],
-                    'authorization': item['autorizacion'],
-                    'name': item['nombre'],
-                    'original_value': item['valor_original'],
-                    'agreed_rate': item['tasa_pactada'],
-                    'billed_rate': item['tasa_ea_facturada'],
-                    'debits_and_credits': item['cargos_y_abonos'],
-                    'deferred_balance': item['saldo_a_diferir'],
-                    'dues': item['cuotas'],
-                    # 'is_matched': False
-                    'is_matched': item['is_matched']
-                    # self.bill_id
+                    'date': item.fecha,
+                    'type': item.tipo,
+                    'authorization': item.autorizacion,
+                    'name': item.nombre,
+                    'original_value': item.valor_original,
+                    'agreed_rate': item.tasa_pactada,
+                    'billed_rate': item.tasa_ea_facturada,
+                    'debits_and_credits': item.cargos_y_abonos,
+                    'deferred_balance': item.saldo_a_diferir,
+                    'dues': item.cuotas,
+                    'is_matched': item.is_matched,
+                    'bill_id': '' # this id bill_id from db, not object
                 }
             )
         return result
+
+    def get_ops_db_fields(self):
+        return list(self.format_ops_for_db()[0].keys())
 
     def get_bill_id(self):
         parts = self.file.split('Extracto')[1].replace('pdf', '').split('_')
         return f"{parts[1]}"
 
-    def get_card_id(self):
-        card_num = self.filename.split('_')[-1].replace('.pdf', '')
-        return self.db_cards.card_id(card_num)
-
-    def get_card_owner(self):
-        card_num = self.filename.split('_')[-1].replace('.pdf', '')
-        return self.db_cards.card_owner(card_num)
-
     def get_all_operations(self):
         ops = []
         for page in self.pages:
             for op in page.operations:
+                if not op.is_matched:
+                    self.has_inconsistency = True
                 ops.append(op)
         print(f"[PDF] File '{self.file.split('/')[-1]}' successfully loaded.")
         return ops
@@ -160,7 +135,7 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if op['tipo'] == 'tax':
+                if op.tipo == 'tax':
                     ops.append(op)
         return ops
 
@@ -169,7 +144,7 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if op['tipo'] == 'expense' or op['tipo'] == 'reimbursement':
+                if op.tipo in ['expense', 'reimbursement']:
                     ops.append(op)
         return ops
 
@@ -187,8 +162,8 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if op['cuotas']:
-                    if op['cuotas'] != '1/1':
+                if op.cuotas:
+                    if op.cuotas != '1/1':
                         ops.append(op)
         return ops
 
@@ -197,9 +172,9 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if op['cuotas']:
-                    num1 = op['cuotas'].split('/')[0]
-                    num2 = op['cuotas'].split('/')[1]
+                if op.cuotas:
+                    num1 = op.cuotas.split('/')[0]
+                    num2 = op.cuotas.split('/')[1]
                     if num1 != num2:
                         ops.append(op)
         return ops
@@ -207,10 +182,10 @@ class PDF:
     def find_inconsistency(self, total, reference, message, tolerance=50):
         self.has_inconsistency = True
         for op in self.operations:
-            if abs(op['cargos_y_abonos'] - tolerance) > abs(reference - total) > abs(op['cargos_y_abonos'] + tolerance):
+            if abs(op.cargos_y_abonos - tolerance) > abs(reference - total) > abs(op.cargos_y_abonos + tolerance):
                 if op not in self.inconsistencies:
                     self.inconsistencies.append(op)
-            elif abs(op['cargos_y_abonos'] - tolerance) < abs(reference - total) < abs(op['cargos_y_abonos'] + tolerance):
+            elif abs(op.cargos_y_abonos - tolerance) < abs(reference - total) < abs(op.cargos_y_abonos + tolerance):
                 if op not in self.inconsistencies:
                     self.inconsistencies.append(op)
         if self.has_inconsistency:
@@ -222,8 +197,8 @@ class PDF:
     def pago_minimo(self):
         total = 0.0
         for op in self.operations:
-            if op['tipo'] != 'payment':
-                total += op['cargos_y_abonos']
+            if op.tipo != 'payment':
+                total += op.cargos_y_abonos
         total = math.ceil(total)
         reference = self.find_min_pay_reference()
         if reference != total:
@@ -235,8 +210,8 @@ class PDF:
     def pago_total(self):
         total = 0.0
         for op in self.operations:
-            if op['tipo'] != 'payment':
-                total += op['cargos_y_abonos'] + op['saldo_a_diferir']
+            if op.tipo != 'payment':
+                total += op.cargos_y_abonos + op.saldo_a_diferir
         total = math.ceil(total)
         reference = self.find_total_pay_reference()
         if reference != total:
@@ -248,8 +223,8 @@ class PDF:
     def pendiente_en_cuotas(self):
         total = 0
         for op in self.operations:
-            if op['tipo'] == 'expense':
-                total += op['saldo_a_diferir']
+            if op.tipo == 'expense':
+                total += op.saldo_a_diferir
         return math.ceil(total)
 
     def find_min_pay_reference(self):
@@ -282,4 +257,3 @@ class PDF:
                 return due_date.date()
         else:
             return None
-            # raise ValueError("Couldn't find due date")
