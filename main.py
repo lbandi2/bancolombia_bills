@@ -16,7 +16,7 @@ def main():
     pdfs = list_pdfs()
     if pdfs is not None:
         for pdf in pdfs:
-            Bill(pdf, push_to_db=True)
+            Bill(pdf, push_to_db=True, upload=True, delete=True)
 
 
 if __name__ == '__main__':

@@ -10,13 +10,14 @@ load_dotenv()
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
 class Bill:
-    def __init__(self, pdf_file, push_to_db=False):
+    def __init__(self, pdf_file, push_to_db=False, upload=False, delete=False):
         self.pdf_file = pdf_file
         print(f"Processing {self.pdf_file}..")
         self.pdf_password = self.get_password()
-        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, date_received=TODAY, upload=True) # remove upload and use method
+        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, date_received=TODAY, upload=upload) # remove upload and use method
         if push_to_db:
             self.push_to_db()
+        if delete:
             self.delete_pdf()
 
     def get_password(self):

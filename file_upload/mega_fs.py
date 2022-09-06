@@ -24,12 +24,21 @@ class MegaFile:
     def get_link(self):
         return self.mega.get_upload_link(self.upload_file())
 
-    def upload_file(self):
-        return self.mega.upload(self.file, self.find_folder()[0])
-
     def find_folder(self):
         folder = self.mega.find(self.folder)
         if folder is None:
             raise ValueError(f"[{self.service_name}] Couldn't find folder '{folder}'")
         return folder
+
+    def file_exists(self):
+        file = self.mega.find(self.file.split('/')[-1])
+        if file is None:
+            return False
+        return True
+
+    def upload_file(self):
+        if not self.file_exists():
+            print(f"[{self.service_name}] File uploaded successfully")
+            return self.mega.upload(self.file, self.find_folder()[0])
+        print(f"[{self.service_name}] File '{self.file.split('/')[-1]}' is already uploaded.")
 

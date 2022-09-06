@@ -1,13 +1,14 @@
 from datetime import datetime
 import pdfplumber
 from pdfminer import pdfdocument
+import pikepdf
 import math
+import os
 import re
 
 from utils import utc_to_local, convert_money
 from pdf.pdf_page import PDFPage
 from db.db_main import DBCard
-#TODO: remove password from pdf file
 from file_upload.mega_fs import MegaFile
 
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
@@ -37,6 +38,7 @@ class PDF:
         self.is_valid = self.validate()
         if self.validate():
             if upload:
+                self.remove_password()
                 self.file_link = self.upload_pdf()
         self.bill_db_fields = self.get_bill_db_fields()
         self.ops_db_fields = self.get_ops_db_fields()
@@ -62,6 +64,14 @@ class PDF:
     def upload_pdf(self):
         mega_file = MegaFile(self.file)
         return mega_file.get_link()
+
+    def remove_password(self):
+        new_filename = f"{self.file.split('.pdf')[0]}_NEW.pdf"
+        with pikepdf.open(self.file, password=str(self.password)) as f:
+            f.save(new_filename)
+            print("[PDF] Removed password")
+        os.remove(self.file)
+        os.rename(new_filename, self.file)
 
     def open_file(self):
         try:
@@ -204,7 +214,7 @@ class PDF:
         if reference != total:
             message = f"[Min pay] Total: {total} / Reference: {reference}"
             self.find_inconsistency(total, reference, message)
-        return reference
+        return total
 
     @property
     def pago_total(self):
@@ -217,7 +227,7 @@ class PDF:
         if reference != total:
             message = f"[Total pay] Total: {total} / Reference: {reference}"
             self.find_inconsistency(total, reference, message)
-        return reference
+        return total
 
     @property
     def pendiente_en_cuotas(self):
@@ -257,3 +267,9 @@ class PDF:
                 return due_date.date()
         else:
             return None
+
+
+class Mastercard(PDF):
+    def __init__(self, pdf_file):
+        super().__init__(pdf_file)
+        self.card = 'Mastercard'

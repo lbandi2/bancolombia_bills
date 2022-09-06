@@ -131,13 +131,6 @@ class DB:
     def insert(self, fields, query, items, force=False):
         # print(items)
         if self.compare_fields_from_db(fields) == []:     # checks that db fields are the same as inserting fields
-            # if force:
-            #     self.execute_insert_many(query, item)
-            #     if self.records_match(self.fetch_last(), item):
-            #         self.print_message(item, type='insert')
-            #         self.count += 1
-            #     else:
-            #         print(f"[MySQL] Something failed inserting record {item}")
             if isinstance(items, dict):
                 if force or not self.is_in_db(items):
                     self.execute_insert_many(query, items)
