@@ -3,7 +3,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 from pdf.pdf_main import PDF
-from db.db_main import DBBill, DBCard
+from db.db_main import DBBill, DBCard, Dolar
 
 load_dotenv()
 
@@ -14,7 +14,8 @@ class Bill:
         self.pdf_file = pdf_file
         print(f"Processing {self.pdf_file}..")
         self.pdf_password = self.get_password()
-        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, date_received=TODAY, upload=upload) # remove upload and use method
+        self.exchange_rate = Dolar().last_cop_rate()
+        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, exchange_rate=self.exchange_rate, date_received=TODAY, upload=upload)
         if push_to_db:
             self.push_to_db()
         if delete:

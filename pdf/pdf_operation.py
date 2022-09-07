@@ -4,27 +4,28 @@ from datetime import datetime
 from utils import utc_to_local
 
 class PDFOperation:
-    def __init__(self, line):
+    def __init__(self, line, exchange_rate=1):
         self.original_line = line
         self.line = line
+        self.exchange_rate = exchange_rate
         self.values = {}
         self.get_values()
 
     def __repr__(self):
-        return f'[{"MATCHED" if self.is_matched else "NOT MATCHED"}] {self.fecha.strftime("%Y-%m-%d")} {self.nombre} {self.cargos_y_abonos}'
+        return f'[{"MATCHED" if self.is_matched else "NOT MATCHED"}] [{self.tipo}] {self.fecha.strftime("%Y-%m-%d")} {self.nombre} {self.cargos_y_abonos if self.cargos_y_abonos > 0 else self.valor_original}'
 
     def get_values(self):
         self.autorizacion = self.get_autorizacion()
         self.fecha = self.get_fecha().date()
         self.cuotas = self.get_cuotas()
         self.tipo = self.get_tipo()
-        self.saldo_a_diferir = self.get_last_value()
+        self.saldo_a_diferir = round(self.get_last_value() * self.exchange_rate, 2)
         if self.cuotas == '0':
             self.saldo_a_diferir = 0.0
-        self.cargos_y_abonos = self.get_last_value()
+        self.cargos_y_abonos = round(self.get_last_value() * self.exchange_rate, 2)
         self.tasa_ea_facturada = self.get_tasa_facturada()
         self.tasa_pactada = self.get_tasa_pactada()
-        self.valor_original = self.get_last_value()
+        self.valor_original = round(self.get_last_value() * self.exchange_rate, 2)
         self.nombre = self.get_nombre()
         self.is_matched = False
 
@@ -67,7 +68,9 @@ class PDFOperation:
             'INTERESES CORRIENTES',
             'INTERESES MORA',
             'GMF JURIDICO',
-            'CUOTA DE MANEJO'
+            'GMF SALDO A FAVOR',
+            'CUOTA DE MANEJO',
+            'REVERSION DE ABONO'
         ]
         payments = [
             'ABONO SUCURSAL VIRTUAL',
@@ -86,6 +89,7 @@ class PDFOperation:
 
         if '-' in self.line.split(' ')[-2]:
             return 'reimbursement'
+
         return 'expense'
     
     def get_cuotas(self):

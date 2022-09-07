@@ -6,15 +6,30 @@ from pdf.pdf_operation import PDFOperation
 from pdf.pdf_op_compare import Compare
 
 class PDFPage:
-    def __init__(self, content, card_id):
+    def __init__(self, content, card_id, exchange_rate):
         self.content = content
         self.card_id = card_id
+        self.exchange_rate = 1
+        self.currency = self.find_currency()
+        if self.find_currency() == 'usd':
+            self.exchange_rate = exchange_rate
         self.cargos_prev = []
         self.desde = self.find_period()[0]
         self.hasta = self.find_period()[1]
         self.operations = self.parse_page()
-        self.num_operations = len(self.operations)  # revisar para que solo queden las compras
-        # TODO: Compare operation to db operations to set is_matched before proceeding
+        self.num_operations = len(self.operations)
+
+    def find_currency(self):
+        phrase = 'estado de cuenta en: '
+        for item in self.content.split('\n'):
+            if phrase in item.lower():
+                if 'dolares' in item.split(phrase)[-1].lower():
+                    return 'usd'
+                elif 'pesos' in item.split(phrase)[-1].lower():
+                    return 'cop'
+        else:
+            raise ValueError("[PDF] Could not find currency type of page")
+
 
     def find_period(self):
         for index, item in enumerate(self.content.split('\n')):
@@ -29,7 +44,7 @@ class PDFPage:
             raise ValueError("Couldn't find billable period, missing 'desde' and 'hasta'")
 
     def fix_authorization(self, line):
-        if 'INTERESES CORRIENTES' in line or 'INTERESES MORA' in line or 'GMF JURIDICO' in line:
+        if 'INTERESES CORRIENTES' in line or 'INTERESES MORA' in line or 'GMF JURIDICO' in line or 'GMF SALDO A FAVOR' in line:
             line = '000000 ' + line
         return line
 
@@ -39,7 +54,7 @@ class PDFPage:
         for line in self.content.split('\n'):
             line = self.fix_authorization(line)
             if exp.match(line):
-                operation = PDFOperation(line)
+                operation = PDFOperation(line, self.exchange_rate)
                 compare = Compare(operation, self.desde, self.hasta, self.card_id)
                 if compare.is_matched:
                     operation.is_matched = True

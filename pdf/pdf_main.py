@@ -14,9 +14,12 @@ from file_upload.mega_fs import MegaFile
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
 class PDF:
-    def __init__(self, file, password, date_received=TODAY, upload=False):
+    def __init__(self, file, password, exchange_rate, date_received=TODAY, upload=False, sum_tolerance=0.001): # default tolerance is 0.01% of total
         self.date_received = date_received
         self.file = file
+        self.card = ''
+        self.sum_tolerance = sum_tolerance
+        self.exchange_rate = exchange_rate
         self.filename = file.split('/')[-1]
         self.password = password
         self.file_link = 'placeholder'
@@ -77,7 +80,7 @@ class PDF:
         try:
             with pdfplumber.open(f'{self.file}', password=self.password) as pdf:
                 for item in pdf.pages:
-                    page = PDFPage(item.extract_text(), self.get_card_id())
+                    page = PDFPage(item.extract_text(), self.get_card_id(), self.exchange_rate)
                     self.pages.append(page)
         except pdfdocument.PDFPasswordIncorrect:
             raise ValueError(f"[PDF] Incorrect password '{self.password}', try again.")
@@ -207,12 +210,18 @@ class PDF:
     def pago_minimo(self):
         total = 0.0
         for op in self.operations:
-            if op.tipo != 'payment':
-                total += op.cargos_y_abonos
+            if op.tipo != 'payment' and 'reversion de abono' not in op.nombre.lower():
+                if op.cargos_y_abonos > 0:
+                    total += op.cargos_y_abonos
+                elif op.cuotas == '1/1':
+                    total += op.valor_original
         total = math.ceil(total)
         reference = self.find_min_pay_reference()
-        if reference != total:
-            message = f"[Min pay] Total: {total} / Reference: {reference}"
+        # if reference != total:
+        if reference * (1 - self.sum_tolerance) <= total <= reference * (1 + self.sum_tolerance):
+            pass
+        else:
+            message = f"[Min pay] Total: {total} / Reference: {reference} / Difference = {reference - total}"
             self.find_inconsistency(total, reference, message)
         return total
 
@@ -221,11 +230,18 @@ class PDF:
         total = 0.0
         for op in self.operations:
             if op.tipo != 'payment':
-                total += op.cargos_y_abonos + op.saldo_a_diferir
+                # total += op.cargos_y_abonos + op.saldo_a_diferir
+                if op.cargos_y_abonos > 0:
+                    total += op.cargos_y_abonos + op.saldo_a_diferir
+                elif op.cargos_y_abonos == 0 and op.cuotas == '1/1':
+                    total += op.valor_original
         total = math.ceil(total)
         reference = self.find_total_pay_reference()
-        if reference != total:
-            message = f"[Total pay] Total: {total} / Reference: {reference}"
+        # if reference != total:
+        if reference * (1 - self.sum_tolerance) <= total <= reference * (1 + self.sum_tolerance):
+            pass
+        else:
+            message = f"[Total pay] Total: {total} / Reference: {reference} / Difference = {reference - total}"
             self.find_inconsistency(total, reference, message)
         return total
 
@@ -237,25 +253,62 @@ class PDF:
                 total += op.saldo_a_diferir
         return math.ceil(total)
 
+    # def find_min_pay_reference(self):
+    #     for page in self.pages:
+    #         for item in page.content.split('\n'):
+    #             if '= Pago mínimo' in item:
+    #                 pago = item.split('= Pago mínimo')[1].strip()
+    #                 if pago != '0.00':
+    #                     return convert_money(pago)
+    #     print("Could not find min_pay reference in PDF")
+    #     return 0
+
     def find_min_pay_reference(self):
+        cop = 0
+        usd = 0
         for page in self.pages:
             for item in page.content.split('\n'):
                 if '= Pago mínimo' in item:
                     pago = item.split('= Pago mínimo')[1].strip()
                     if pago != '0.00':
-                        return convert_money(pago)
+                        if page.currency == 'usd':
+                            usd += convert_money(pago)
+                        elif page.currency == 'cop':
+                            cop += convert_money(pago)
+        if cop > 0 or usd > 0:
+            cop += usd * self.exchange_rate
+            return round(cop, 2)
         print("Could not find min_pay reference in PDF")
         return 0
 
+    # def find_total_pay_reference(self):
+    #     for page in self.pages:
+    #         for item in page.content.split('\n'):
+    #             if '= Pago mínimo' in item:
+    #                 pago = item.split('= Pago mínimo')[0].replace('= Pagos total', '').strip()
+    #                 if pago != '0.00':
+    #                     return convert_money(pago)
+    #     print("Could not find total_pay reference in PDF")
+    #     return 0
+
     def find_total_pay_reference(self):
+        cop = 0
+        usd = 0
         for page in self.pages:
             for item in page.content.split('\n'):
                 if '= Pago mínimo' in item:
                     pago = item.split('= Pago mínimo')[0].replace('= Pagos total', '').strip()
                     if pago != '0.00':
-                        return convert_money(pago)
+                        if page.currency == 'usd':
+                            usd += convert_money(pago)
+                        elif page.currency == 'cop':
+                            cop += convert_money(pago)
+        if cop > 0 or usd > 0:
+            cop += usd * self.exchange_rate
+            return round(cop, 2)
         print("Could not find total_pay reference in PDF")
         return 0
+
 
     def find_duedate(self):
         for page in self.pages:
@@ -270,6 +323,15 @@ class PDF:
 
 
 class Mastercard(PDF):
-    def __init__(self, pdf_file):
-        super().__init__(pdf_file)
+    def __init__(self, pdf_file, password, date_received=TODAY, upload=False):
+        super().__init__(pdf_file, password, date_received, upload)
         self.card = 'Mastercard'
+
+    def open_file(self):
+        try:
+            with pdfplumber.open(f'{self.file}', password=self.password) as pdf:
+                for item in pdf.pages:
+                    page = PDFPage(item.extract_text(), self.get_card_id())
+                    self.pages.append(page)
+        except pdfdocument.PDFPasswordIncorrect:
+            raise ValueError(f"[PDF] Incorrect password '{self.password}', try again.")

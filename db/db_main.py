@@ -5,6 +5,17 @@ from db.db_base import DB
 
 load_dotenv()
 
+class Dolar(DB):
+    DB_DOLAR = os.getenv('DBSQL_TABLE_DOLAR')
+
+    def __init__(self, table=DB_DOLAR):
+        super().__init__(table)
+
+    def last_cop_rate(self):
+        query = f"SELECT * FROM {self.table} WHERE currency='COP' order by datetime DESC limit 1"
+        records = self.connect('fetch', query)
+        return records[0]['other']
+
 
 class DBCard(DB):
     DB_CARDS = os.getenv('DBSQL_TABLE_CARDS')
