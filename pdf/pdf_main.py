@@ -121,7 +121,8 @@ class PDF:
                     'deferred_balance': item.saldo_a_diferir,
                     'dues': item.cuotas,
                     'is_matched': item.is_matched,
-                    'bill_id': '' # this id bill_id from db, not object
+                    'bill_id': '', # this id bill_id from db, not object
+                    'op_match_id': item.matched_op
                 }
             )
         return result
@@ -137,7 +138,7 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if not op.is_matched:
+                if not op.is_matched and op.tipo == 'expense':
                     self.has_inconsistency = True
                 ops.append(op)
         print(f"[PDF] File '{self.file.split('/')[-1]}' successfully loaded.")
@@ -253,16 +254,6 @@ class PDF:
                 total += op.saldo_a_diferir
         return math.ceil(total)
 
-    # def find_min_pay_reference(self):
-    #     for page in self.pages:
-    #         for item in page.content.split('\n'):
-    #             if '= Pago mínimo' in item:
-    #                 pago = item.split('= Pago mínimo')[1].strip()
-    #                 if pago != '0.00':
-    #                     return convert_money(pago)
-    #     print("Could not find min_pay reference in PDF")
-    #     return 0
-
     def find_min_pay_reference(self):
         cop = 0
         usd = 0
@@ -280,16 +271,6 @@ class PDF:
             return round(cop, 2)
         print("Could not find min_pay reference in PDF")
         return 0
-
-    # def find_total_pay_reference(self):
-    #     for page in self.pages:
-    #         for item in page.content.split('\n'):
-    #             if '= Pago mínimo' in item:
-    #                 pago = item.split('= Pago mínimo')[0].replace('= Pagos total', '').strip()
-    #                 if pago != '0.00':
-    #                     return convert_money(pago)
-    #     print("Could not find total_pay reference in PDF")
-    #     return 0
 
     def find_total_pay_reference(self):
         cop = 0

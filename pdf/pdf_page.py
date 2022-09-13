@@ -58,6 +58,7 @@ class PDFPage:
                 compare = Compare(operation, self.desde, self.hasta, self.card_id)
                 if compare.is_matched:
                     operation.is_matched = True
+                    operation.matched_op = compare.matched_op
                 ops.append(operation)
         return ops
 

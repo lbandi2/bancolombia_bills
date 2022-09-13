@@ -14,20 +14,35 @@ class Compare:
         self.date_to = date_to.replace(tzinfo=None)
         #TODO: Do the same as date_from for date_to?
         self.db_records = self.db.matching_records(self.date_from, self.date_to, card_id)
-        self.is_matched = self._compare_vs_card_ops()
-        #TODO: add match field to cardop to link to bill op?
+        # self.is_matched = self._compare_vs_card_ops()
+        self.is_matched = False if self._compare_vs_card_ops() is None else True
+        self.matched_op = self._compare_vs_card_ops()
+
+    # def _compare_vs_card_ops(self):
+    #     if self.pdf_operation.tipo in ['tax', 'payment', 'reimbursement']:
+    #         return True
+    #     for item in self.db_records:
+    #         if item['entity'] in self.pdf_operation.nombre:
+    #             if self.pdf_operation.cargos_y_abonos == item['amount']:
+    #                 return True
+    #             if self.pdf_operation.valor_original == item['amount']:
+    #                 return True
+    #     for item in self.db.all_records():
+    #         if item['entity'] in self.pdf_operation.nombre:
+    #             if (self.pdf_operation.valor_original * (1 - self.tolerance)) <= item['amount'] <= (self.pdf_operation.valor_original * (1 + self.tolerance)):
+    #                 return True
+    #     return False
 
     def _compare_vs_card_ops(self):
-        if self.pdf_operation.tipo in ['tax', 'payment', 'reimbursement']:
-            return True
         for item in self.db_records:
             if item['entity'] in self.pdf_operation.nombre:
                 if self.pdf_operation.cargos_y_abonos == item['amount']:
-                    return True
+                    return item['id']
                 if self.pdf_operation.valor_original == item['amount']:
-                    return True
+                    return item['id']
         for item in self.db.all_records():
             if item['entity'] in self.pdf_operation.nombre:
                 if (self.pdf_operation.valor_original * (1 - self.tolerance)) <= item['amount'] <= (self.pdf_operation.valor_original * (1 + self.tolerance)):
-                    return True
-        return False
+                    return item['id']
+        return None
+

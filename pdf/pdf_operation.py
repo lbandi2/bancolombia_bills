@@ -28,6 +28,7 @@ class PDFOperation:
         self.valor_original = round(self.get_last_value() * self.exchange_rate, 2)
         self.nombre = self.get_nombre()
         self.is_matched = False
+        self.matched_op = None
 
     def get_tasa_facturada(self):
         exp = re.compile(r'(\d{2}\,\d{4})')
