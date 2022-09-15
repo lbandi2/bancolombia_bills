@@ -9,17 +9,28 @@ import re
 from utils import utc_to_local, convert_money
 from pdf.pdf_page import PDFPage
 from db.db_main import DBCard
-from file_upload.mega_fs import MegaFile
+# from file_upload.mega_fs import MegaFile
 
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
 class PDF:
-    def __init__(self, file, password, exchange_rate, date_received=TODAY, upload=False, sum_tolerance=0.001): # default tolerance is 0.01% of total
+    def __init__(
+            self, 
+            file, 
+            password, 
+            exchange_rate, 
+            mega_obj,
+            date_received=TODAY, 
+            upload=False, 
+            sum_tolerance=0.001     # default tolerance is 0.01% of total
+        ): 
+        
         self.date_received = date_received
         self.file = file
         self.card = ''
         self.sum_tolerance = sum_tolerance
         self.exchange_rate = exchange_rate
+        self.mega = mega_obj
         self.filename = file.split('/')[-1]
         self.password = password
         self.file_link = 'placeholder'
@@ -42,11 +53,12 @@ class PDF:
         if self.validate():
             if upload:
                 self.remove_password()
+                self.mega.file = self.file
                 self.file_link = self.upload_pdf()
-        self.bill_db_fields = self.get_bill_db_fields()
-        self.ops_db_fields = self.get_ops_db_fields()
-        self.bill_db_formatted = self.format_bill_for_db()
-        self.ops_db_formatted = self.format_ops_for_db()
+            self.bill_db_fields = self.get_bill_db_fields()
+            self.ops_db_fields = self.get_ops_db_fields()
+            self.bill_db_formatted = self.format_bill_for_db()
+            self.ops_db_formatted = self.format_ops_for_db()
 
     def get_card_id(self):
         card_num = self.filename.split('_')[-1].replace('.pdf', '')
@@ -58,15 +70,20 @@ class PDF:
 
     def validate(self):
         if self.due_date is None:
+            print("[PDF] No due date found")
             return False
         if len(self.operations) == 0:
             if self.pago_minimo == 0 and self.pago_total == 0:
+                print("[PDF] No min_pay/total_pay found")
                 return False
         return True
 
+    # def upload_pdf(self):
+    #     mega_file = MegaFile(self.file)
+    #     return mega_file.get_link()
+
     def upload_pdf(self):
-        mega_file = MegaFile(self.file)
-        return mega_file.get_link()
+        return self.mega.get_link()
 
     def remove_password(self):
         new_filename = f"{self.file.split('.pdf')[0]}_NEW.pdf"
@@ -167,7 +184,7 @@ class PDF:
         ops = []
         for page in self.pages:
             for op in page.operations:
-                if op['tipo'] == 'payment':
+                if op.tipo == 'payment':
                     ops.append(op)
         return ops
 
@@ -211,11 +228,17 @@ class PDF:
     def pago_minimo(self):
         total = 0.0
         for op in self.operations:
-            if op.tipo != 'payment' and 'reversion de abono' not in op.nombre.lower():
+            # if op.tipo != 'payment' and 'reversion de abono' not in op.nombre.lower():
+            if 'reversion de abono' in op.nombre.lower():
+                # total += op.valor_original
+                continue #TODO: what???? should uncomment previous line
+            elif op.tipo == 'expense':
                 if op.cargos_y_abonos > 0:
                     total += op.cargos_y_abonos
                 elif op.cuotas == '1/1':
                     total += op.valor_original
+            elif op.tipo in ['reimbursement', 'tax']:
+                total += op.valor_original
         total = math.ceil(total)
         reference = self.find_min_pay_reference()
         # if reference != total:
@@ -230,12 +253,15 @@ class PDF:
     def pago_total(self):
         total = 0.0
         for op in self.operations:
-            if op.tipo != 'payment':
+            # if op.tipo != 'payment':
+            if op.tipo == 'expense':
                 # total += op.cargos_y_abonos + op.saldo_a_diferir
                 if op.cargos_y_abonos > 0:
                     total += op.cargos_y_abonos + op.saldo_a_diferir
                 elif op.cargos_y_abonos == 0 and op.cuotas == '1/1':
                     total += op.valor_original
+            elif op.tipo in ['reimbursement', 'tax']:
+                total += op.valor_original
         total = math.ceil(total)
         reference = self.find_total_pay_reference()
         # if reference != total:

@@ -4,18 +4,20 @@ from dotenv import load_dotenv
 
 from pdf.pdf_main import PDF
 from db.db_main import DBBill, DBCard, Dolar
+from file_upload.mega_fs import MegaFile
 
 load_dotenv()
 
 TODAY = datetime.now().date().strftime('%Y-%m-%d')
 
 class Bill:
-    def __init__(self, pdf_file, push_to_db=False, upload=False, delete=False):
+    def __init__(self, pdf_file, mega_obj=MegaFile(file=None), push_to_db=False, upload=False, delete=False):
         self.pdf_file = pdf_file
         print(f"Processing {self.pdf_file}..")
         self.pdf_password = self.get_password()
         self.exchange_rate = Dolar().last_cop_rate()
-        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, exchange_rate=self.exchange_rate, date_received=TODAY, upload=upload)
+        self.mega = mega_obj
+        self.pdf_content = PDF(self.pdf_file, password=self.pdf_password, exchange_rate=self.exchange_rate, mega_obj=self.mega, date_received=TODAY, upload=upload)
         if push_to_db:
             self.push_to_db()
         if delete:

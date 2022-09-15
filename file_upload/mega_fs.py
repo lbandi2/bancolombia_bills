@@ -22,6 +22,10 @@ class MegaFile:
             raise ValueError(f"[{self.service_name}] Wrong username/password combination")
 
     def get_link(self):
+        if self.file_exists():
+            print(f"[{self.service_name}] File '{self.file.split('/')[-1]}' is already uploaded.")
+            return None
+        print(f"[{self.service_name}] File uploaded successfully")
         return self.mega.get_upload_link(self.upload_file())
 
     def find_folder(self):
@@ -31,14 +35,13 @@ class MegaFile:
         return folder
 
     def file_exists(self):
+        if self.file is None:
+            raise ValueError("[MEGA] File path is not passed")
         file = self.mega.find(self.file.split('/')[-1])
         if file is None:
             return False
         return True
 
     def upload_file(self):
-        if not self.file_exists():
-            print(f"[{self.service_name}] File uploaded successfully")
-            return self.mega.upload(self.file, self.find_folder()[0])
-        print(f"[{self.service_name}] File '{self.file.split('/')[-1]}' is already uploaded.")
+        return self.mega.upload(self.file, self.find_folder()[0])
 

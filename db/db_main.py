@@ -61,6 +61,11 @@ class DBBillOp(DB):
         super().__init__(table, validation_fields)
         self.print_name = 'Operation'
 
+    def all_unmatched_records(self):
+        query = f"SELECT * FROM {self.table} WHERE op_match_id IS NULL ORDER BY date DESC"
+        records = self.connect('fetch', query)
+        return records
+
 
 class DBBill(DB):
     DB_BILLS = os.getenv('DBSQL_TABLE_BILLS')

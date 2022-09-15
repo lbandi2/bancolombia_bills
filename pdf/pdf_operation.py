@@ -12,7 +12,7 @@ class PDFOperation:
         self.get_values()
 
     def __repr__(self):
-        return f'[{"MATCHED" if self.is_matched else "NOT MATCHED"}] [{self.tipo}] {self.fecha.strftime("%Y-%m-%d")} {self.nombre} {self.cargos_y_abonos if self.cargos_y_abonos > 0 else self.valor_original}'
+        return f'[{"MATCHED" if self.is_matched else "NOT MATCHED"}] [{self.tipo}] {self.fecha.strftime("%Y-%m-%d")} {self.nombre} {self.cargos_y_abonos if self.cargos_y_abonos > 0 else self.valor_original} [{self.cuotas}]'
 
     def get_values(self):
         self.autorizacion = self.get_autorizacion()
