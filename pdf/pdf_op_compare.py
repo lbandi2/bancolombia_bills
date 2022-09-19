@@ -31,7 +31,7 @@ class Compare:
         #             if (pdf_value * (1 - self.tolerance)) <= item['amount'] <= (pdf_value * (1 + self.tolerance)):
         #                 return item['id']
 
-        for item in self.db_cardop_records:
+        for item in self.db_cardop_records: # match exact amount
             if item['entity'].lower() in self.pdf_operation.nombre.lower() or self.pdf_operation.nombre.lower() in item['entity'].lower():
                 if self.pdf_operation.fecha == item['date'].date():
                     value = self.pdf_operation.valor_original
@@ -43,20 +43,21 @@ class Compare:
                     if (pdf_value * (1 - self.tolerance)) <= item['amount'] <= (pdf_value * (1 + self.tolerance)):
                         return item['id']
         else:
-            for item in self.db_cardop_records:
+            for item in self.db_cardop_records: # match amount +- tolerance
                 if item['entity'].lower() in self.pdf_operation.nombre.lower() or self.pdf_operation.nombre.lower() in item['entity'].lower():
                     if (self.pdf_operation.fecha - timedelta(days=2)) < item['date'].date() < (self.pdf_operation.fecha + timedelta(days=2)):
                         value = self.pdf_operation.valor_original
                         if value * (1 - tolerance) < item['amount'] < value * (1 + tolerance):
                             return item['id']
 
-
-        for item in self.db_billop_records:
-            if item['authorization'] != '000000' and \
-                item['dues'] not in ['1', '1/1', '0'] and \
-                item['authorization'] == self.pdf_operation.autorizacion:
-                if (self.pdf_operation.valor_original * (1 - self.tolerance)) <= item['original_value'] <= (self.pdf_operation.valor_original * (1 + self.tolerance)):
-                    return item['op_match_id']
+        if self.pdf_operation.autorizacion != '000000': # match against previous bill operations
+            if self.pdf_operation.cuotas not in ['1', '1/1', '0']:
+                for item in self.db_billop_records:
+                    if item['authorization'] == self.pdf_operation.autorizacion:
+                        # if (self.pdf_operation.valor_original * (1 - self.tolerance)) <= item['original_value'] <= (self.pdf_operation.valor_original * (1 + self.tolerance)):
+                        if self.pdf_operation.valor_original == item['original_value']:
+                            if item['op_match_id'] is not None:
+                                return item['op_match_id']
 
         return None
 
