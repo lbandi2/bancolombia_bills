@@ -12,7 +12,7 @@ class DB:
     DB_PASSWORD = os.getenv('DBSQL_PASSWORD')
     DB = os.getenv('DBSQL')
 
-    def __init__(self, table, validation_fields=[], host=DB_HOST, user=DB_USER, password=DB_PASSWORD, db=DB):
+    def __init__(self, table: str, validation_fields=[], host=DB_HOST, user=DB_USER, password=DB_PASSWORD, db=DB):
         self.host = host
         self.db = db
         self.user = user
@@ -47,39 +47,39 @@ class DB:
         except Error as e:
             print(e)
 
-    def fetch(self, cursor, query):
+    def fetch(self, cursor, query: str) -> list:
         cursor.execute(query)
         result = cursor.fetchall()
         return result
 
-    def execute(self, connection, cursor, query, records):
+    def execute(self, connection, cursor, query: str, records: list) -> None:
         cursor.execute(query)
         connection.commit()
 
-    def execute_many(self, connection, cursor, query, records):
+    def execute_many(self, connection, cursor, query: str, records: list) -> None:
         cursor.executemany(query, records)
         connection.commit()
 
-    def all_records(self):
+    def all_records(self) -> list:
         query = f"SELECT * FROM {self.table}"
         records = self.connect('fetch', query)
         return records
 
-    def fetch_last(self):
+    def fetch_last(self) -> dict: # or None
         query = f"SELECT * FROM {self.table} ORDER BY id DESC LIMIT 1"
         records = self.connect('fetch', query)
         if records != []:
             return records[0]
         return None
 
-    def fields(self):
+    def fields(self) -> list:
         query = f"SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='{self.db}' AND `TABLE_NAME`='{self.table}'"
         records = self.connect('fetch', query, dictionary=False)
         return list(sum(records, ()))
 
-    def update_category(self, item, category):
-        query = f"UPDATE {self.table} SET category = '{category}' WHERE id = {item[0]}"
-        self.connect('execute', query)
+    # def update_category(self, item, category):
+    #     query = f"UPDATE {self.table} SET category = '{category}' WHERE id = {item[0]}"
+    #     self.connect('execute', query)
 
     def find_date(self, date):
         query = f"SELECT * FROM {self.table} WHERE datetime LIKE '{date}%'"
@@ -93,7 +93,7 @@ class DB:
     #                 return True
     #     return False
 
-    def is_in_db(self, item):   # takes 2 dict
+    def is_in_db(self, item: list) -> bool:   # takes 2 list of dict
         valid_fields = []
         if self.all_records() == []:
             return False
@@ -103,7 +103,7 @@ class DB:
                     valid_fields.append(item[field])
         return len(set(valid_fields)) == len(self.validation_fields)
 
-    def compare_fields_from_db(self, pdf_fields):
+    def compare_fields_from_db(self, pdf_fields: list) -> list:
         pdf_fields.append('id')
         db_fields = DB(table=self.table)
         different_fields = list(set(pdf_fields) ^ set(db_fields.fields()))
@@ -117,7 +117,7 @@ class DB:
     #     elif type == 'in_db':
     #         pass
 
-    def print_message(self, item, type):
+    def print_message(self, item: dict, type: str) -> None:
         msg = ''
         # print(item)
         for field in self.validation_fields:
@@ -158,7 +158,7 @@ class DB:
         else:
             print(f"No additions performed\n")
 
-    def records_match(self, db_record, inserted_record):  # takes 2 dict / self.validation_fields = list_of_fields
+    def records_match(self, db_record: dict, inserted_record: dict) -> bool:  # takes 2 dict / self.validation_fields = list_of_fields
         if db_record is None:
             return False
         if self.validation_fields != []:
@@ -186,7 +186,7 @@ class DB:
     #         records = [items]   # must be a list for execute_many
     #     self.connect('execute_many', query, records)
 
-    def execute_insert_many(self, query, items):
+    def execute_insert_many(self, query: str, items: dict) -> None:
         records = [dict_to_list(items)]   # convert items to list before inserting when only one record
         # print(records)
         self.connect('execute_many', query, records)

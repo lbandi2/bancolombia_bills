@@ -26,13 +26,13 @@ class Email:
         self.attachment = []
         self.read_payload()
 
-    def is_unwanted_attachment(self, item):
+    def is_unwanted_attachment(self, item) -> bool:
         for unwanted in self.unwanted_attachments:
             if unwanted in item['filename'].lower():
                 return True
         return False
 
-    def download_attachment(self, folder_name='./data/'):
+    def download_attachment(self, folder_name='./data/') -> None:
         for item in self.attachment:
             if self.is_unwanted_attachment(item):
                 print(f"Skipping attachment with filename: '{item['filename']}'")
@@ -48,7 +48,7 @@ class Email:
                         f.write(urlsafe_b64decode(data))
 
 
-    def get_unread_status(self):
+    def get_unread_status(self) -> bool:
         if 'UNREAD' in self.labels:
             return True
         return False
@@ -92,7 +92,7 @@ class Email:
                                 attach['message_id'] = message['id']
                                 self.attachment.append(attach)
 
-    def read_payload(self):
+    def read_payload(self) -> None:
         if self.headers:
             for header in self.headers:
                 name = header.get("name")

@@ -6,7 +6,7 @@ from pdf.pdf_operation import PDFOperation
 from pdf.pdf_op_compare import Compare
 
 class PDFPage:
-    def __init__(self, content, card_id, exchange_rate):
+    def __init__(self, content: str, card_id: int, exchange_rate: float):
         self.content = content
         self.card_id = card_id
         self.exchange_rate = 1
@@ -19,7 +19,7 @@ class PDFPage:
         self.operations = self.parse_page()
         self.num_operations = len(self.operations)
 
-    def find_currency(self):
+    def find_currency(self) -> str:
         phrase = 'estado de cuenta en: '
         for item in self.content.split('\n'):
             if phrase in item.lower():
@@ -31,7 +31,7 @@ class PDFPage:
             raise ValueError("[PDF] Could not find currency type of page")
 
 
-    def find_period(self):
+    def find_period(self) -> list:
         for index, item in enumerate(self.content.split('\n')):
             exp = re.findall("\d{2}/\d{2}/\d{4}", item)
             if len(exp) == 2:
@@ -43,12 +43,12 @@ class PDFPage:
         else:
             raise ValueError("Couldn't find billable period, missing 'desde' and 'hasta'")
 
-    def fix_authorization(self, line):
+    def fix_authorization(self, line) -> str:
         if 'INTERESES CORRIENTES' in line or 'INTERESES MORA' in line or 'GMF JURIDICO' in line or 'GMF SALDO A FAVOR' in line:
             line = '000000 ' + line
         return line
 
-    def find_operations(self):      # strategy: find operations starting with (R00000|000000) 11/11/2014
+    def find_operations(self) -> list:      # strategy: find operations starting with (R00000|000000) 11/11/2014
         ops = []
         exp = re.compile(r'(\d{6}|[A-Z]\d{5}) \d{2}/\d{2}/\d{4}') 
         for line in self.content.split('\n'):
@@ -62,7 +62,7 @@ class PDFPage:
                 ops.append(operation)
         return ops
 
-    def check_duplicates(self, operations):
+    def check_duplicates(self, operations) -> list:
         final_lst = []
         for op in operations:
             if op.autorizacion == '000000':
@@ -77,7 +77,7 @@ class PDFPage:
                     final_lst.append(op)
         return final_lst
 
-    def parse_page(self):
+    def parse_page(self) -> list:
         all_operations = self.find_operations()
         operations = all_operations
         return operations

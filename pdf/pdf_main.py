@@ -16,10 +16,10 @@ TODAY = datetime.now().date().strftime('%Y-%m-%d')
 class PDF:
     def __init__(
             self, 
-            file, 
-            password, 
-            exchange_rate, 
-            mega_obj,
+            file: str, 
+            password: str, 
+            exchange_rate: float, 
+            mega_obj: object,
             date_received=TODAY, 
             upload=False, 
             sum_tolerance=0.001     # default tolerance is 0.01% of total
@@ -60,15 +60,15 @@ class PDF:
             self.bill_db_formatted = self.format_bill_for_db()
             self.ops_db_formatted = self.format_ops_for_db()
 
-    def get_card_id(self):
+    def get_card_id(self) -> int:
         card_num = self.filename.split('_')[-1].replace('.pdf', '')
         return self.db_cards.card_id(card_num)
 
-    def get_card_owner(self):
+    def get_card_owner(self) -> str:
         card_num = self.filename.split('_')[-1].replace('.pdf', '')
         return self.db_cards.card_owner(card_num)
 
-    def validate(self):
+    def validate(self) -> bool:
         if self.due_date is None:
             print("[PDF] No due date found")
             return False
@@ -78,14 +78,10 @@ class PDF:
                 return False
         return True
 
-    # def upload_pdf(self):
-    #     mega_file = MegaFile(self.file)
-    #     return mega_file.get_link()
-
     def upload_pdf(self):
         return self.mega.get_link()
 
-    def remove_password(self):
+    def remove_password(self) -> None:
         new_filename = f"{self.file.split('.pdf')[0]}_NEW.pdf"
         with pikepdf.open(self.file, password=str(self.password)) as f:
             f.save(new_filename)
@@ -93,7 +89,7 @@ class PDF:
         os.remove(self.file)
         os.rename(new_filename, self.file)
 
-    def open_file(self):
+    def open_file(self) -> None:
         try:
             with pdfplumber.open(f'{self.file}', password=self.password) as pdf:
                 for item in pdf.pages:
@@ -102,7 +98,7 @@ class PDF:
         except pdfdocument.PDFPasswordIncorrect:
             raise ValueError(f"[PDF] Incorrect password '{self.password}', try again.")
 
-    def format_bill_for_db(self):
+    def format_bill_for_db(self) -> dict:
         result = {
                 'bill_id': self.bill_id, 
                 'date_received': self.date_received,
@@ -119,10 +115,10 @@ class PDF:
             }
         return result
 
-    def get_bill_db_fields(self):
+    def get_bill_db_fields(self) -> list:
         return list(self.format_bill_for_db().keys())
 
-    def format_ops_for_db(self):
+    def format_ops_for_db(self) -> list:
         result = []
         for item in self.operations:
             result.append(
@@ -144,14 +140,14 @@ class PDF:
             )
         return result
 
-    def get_ops_db_fields(self):
+    def get_ops_db_fields(self) -> list:
         return list(self.format_ops_for_db()[0].keys())
 
-    def get_bill_id(self):
+    def get_bill_id(self) -> str:
         parts = self.file.split('Extracto')[1].replace('pdf', '').split('_')
         return f"{parts[1]}"
 
-    def get_all_operations(self):
+    def get_all_operations(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -162,7 +158,7 @@ class PDF:
         return ops
 
     @property
-    def tax_operations(self):
+    def tax_operations(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -171,7 +167,7 @@ class PDF:
         return ops
 
     @property
-    def expense_operations(self):
+    def expense_operations(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -180,7 +176,7 @@ class PDF:
         return ops
 
     @property
-    def payment_operations(self):
+    def payment_operations(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -189,7 +185,7 @@ class PDF:
         return ops
 
     @property
-    def en_cuotas(self):
+    def en_cuotas(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -199,7 +195,7 @@ class PDF:
         return ops
 
     @property
-    def cuotas_pendientes(self):
+    def cuotas_pendientes(self) -> list:
         ops = []
         for page in self.pages:
             for op in page.operations:
@@ -210,7 +206,7 @@ class PDF:
                         ops.append(op)
         return ops
 
-    def find_inconsistency(self, total, reference, message, tolerance=50):
+    def find_inconsistency(self, total: int, reference: int, message: str, tolerance=50) -> None:
         self.has_inconsistency = True
         for op in self.operations:
             if abs(op.cargos_y_abonos - tolerance) > abs(reference - total) > abs(op.cargos_y_abonos + tolerance):
@@ -225,7 +221,7 @@ class PDF:
                 print(item)
 
     @property
-    def pago_minimo(self):
+    def pago_minimo(self) -> float:
         total = 0.0
         for op in self.operations:
             # if op.tipo != 'payment' and 'reversion de abono' not in op.nombre.lower():
@@ -250,7 +246,7 @@ class PDF:
         return total
 
     @property
-    def pago_total(self):
+    def pago_total(self) -> float:
         total = 0.0
         for op in self.operations:
             # if op.tipo != 'payment':
@@ -273,14 +269,14 @@ class PDF:
         return total
 
     @property
-    def pendiente_en_cuotas(self):
+    def pendiente_en_cuotas(self) -> float:
         total = 0
         for op in self.operations:
             if op.tipo == 'expense':
                 total += op.saldo_a_diferir
         return math.ceil(total)
 
-    def find_min_pay_reference(self):
+    def find_min_pay_reference(self) -> float:
         cop = 0
         usd = 0
         for page in self.pages:
@@ -298,7 +294,7 @@ class PDF:
         print("Could not find min_pay reference in PDF")
         return 0
 
-    def find_total_pay_reference(self):
+    def find_total_pay_reference(self) -> float:
         cop = 0
         usd = 0
         for page in self.pages:
@@ -317,7 +313,7 @@ class PDF:
         return 0
 
 
-    def find_duedate(self):
+    def find_duedate(self) -> str:
         for page in self.pages:
             all_dates = re.findall("\d{2}/\d{2}/\d{4}", page.content)
             all_dates = set(all_dates)

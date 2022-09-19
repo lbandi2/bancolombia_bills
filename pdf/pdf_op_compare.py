@@ -15,22 +15,6 @@ class Compare:
         self.matched_op = self._compare_vs_card_ops()
 
     def _compare_vs_card_ops(self, tolerance=0.05):
-        # for item in self.db_cardop_records:
-        #     if item['entity'].lower() in self.pdf_operation.nombre.lower() or self.pdf_operation.nombre.lower() in item['entity'].lower():
-        #         if self.pdf_operation.fecha == item['date'].date():
-        #             value = self.pdf_operation.valor_original
-        #             if value * (1 - tolerance) < item['amount'] < value * (1 + tolerance):
-        #                 return item['id']
-        #         elif (self.pdf_operation.fecha - timedelta(days=2)) < item['date'].date() < (self.pdf_operation.fecha + timedelta(days=2)):
-        #             value = self.pdf_operation.valor_original
-        #             if value * (1 - tolerance) < item['amount'] < value * (1 + tolerance):
-        #                 return item['id']
-        #         elif self.pdf_operation.cuotas not in ['0', '1', '1/1']:
-        #             cuotas = self.pdf_operation.cuotas.split('/')[-1]
-        #             pdf_value = self.pdf_operation.cargos_y_abonos * int(cuotas)
-        #             if (pdf_value * (1 - self.tolerance)) <= item['amount'] <= (pdf_value * (1 + self.tolerance)):
-        #                 return item['id']
-
         for item in self.db_cardop_records: # match exact amount
             if item['entity'].lower() in self.pdf_operation.nombre.lower() or self.pdf_operation.nombre.lower() in item['entity'].lower():
                 if self.pdf_operation.fecha == item['date'].date():

@@ -6,10 +6,10 @@ import re
 import glob
 import os
 
-def dir_exist(path):
+def dir_exist(path: str) -> bool:
     return os.path.isdir(path)
 
-def make_dir(path):
+def make_dir(path: str) -> None:
     if not dir_exist(path):
         try:
             os.mkdir(path)
@@ -18,7 +18,7 @@ def make_dir(path):
         else:
             print(f"Creating folder '{path}'..")
 
-def get_size_format(b, factor=1024, suffix="B"):
+def get_size_format(b: float, factor=1024, suffix="B") -> str:
     """
     Scale bytes to its proper byte format
     e.g:
@@ -31,10 +31,10 @@ def get_size_format(b, factor=1024, suffix="B"):
         b /= factor
     return f"{b:.2f}Y{suffix}"
 
-def utc_to_local(utc_datetime):
+def utc_to_local(utc_datetime: datetime) -> datetime:
     return utc_datetime.astimezone(tz.tzlocal())
 
-def convert_date(string):
+def convert_date(string: str) -> datetime:
     if ' (' in string:
         string = string.split(' (')[0]
     try:
@@ -45,7 +45,7 @@ def convert_date(string):
         tz_date = utc_to_local(date)
     return tz_date
 
-def string_to_date(string):
+def string_to_date(string: str) -> datetime:
     return datetime.strptime(string, "%d/%m/%Y")
 
 # def convert_money(string):
@@ -66,7 +66,7 @@ def string_to_date(string):
 #     finally:
 #         return op_amount
 
-def convert_money(string):
+def convert_money(string: str) -> float:
     if '-' in string[-1]:
         string = '-' + string[:-1].strip('$')
     op_amount = None
@@ -85,12 +85,12 @@ def convert_money(string):
     else:
         print(f"Could not convert {string} to money")
 
-def string_to_datetime(string):
+def string_to_datetime(string) -> datetime:
     if type(string) is str:
         return datetime.strptime(string, '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None)
     return string
 
-def regexp_in_list(source, items_list, index=1):
+def regexp_in_list(source, items_list: list, index=1):
     """Takes a source list or dictionary to compare against a list"""
     if isinstance(source, dict):
         for item in source.items():
@@ -117,7 +117,7 @@ def regexp_in_list(source, items_list, index=1):
 #     else:
 #         return False
 
-def list_pdfs():
+def list_pdfs() -> (list | None):
     list_of_files = glob.glob('./data/*.pdf') # * means all if need specific format then *.csv
     if list_of_files:
         return list_of_files
@@ -125,13 +125,13 @@ def list_pdfs():
         print("No PDF files found.")
         return None
 
-def last_pdf():
+def last_pdf() -> str:
     list_of_files = list_pdfs()
     if list_of_files is not None:
         latest_file = max(list_of_files, key=os.path.getctime)
         return latest_file
 
-def dict_to_list(dic):
+def dict_to_list(dic: dict) -> list:
     "Takes either a list of dictionaries or a dictionary and returns a list of values"
     if isinstance(dic, dict):
         return [item for item in dic.values()]

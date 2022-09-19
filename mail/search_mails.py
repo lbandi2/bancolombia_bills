@@ -3,8 +3,6 @@ import os
 
 from mail.gmail_setup import gmail_authenticate
 from mail.emails import Email
-# from mailoperation import MailOperation
-# from db_sql import DB
 
 load_dotenv()
 
@@ -53,12 +51,12 @@ class Search:
             self.emails.append(email)
             self.mark_as_read(msg)
     
-    def mark_as_read(self, msg):
+    def mark_as_read(self, msg) -> None:
         return self.service.users().messages().modify(
             userId='me', id=msg['id'],
             body={'removeLabelIds': ['UNREAD']}).execute()
 
-    def search_messages(self, query):
+    def search_messages(self, query: str) -> list:
         result = self.service.users().messages().list(maxResults=500, userId='me', labelIds=[query]).execute()
         messages = []
         if 'messages' in result:
@@ -76,7 +74,7 @@ class Search:
         labels = msg['labelIds']
         return payload, labels
 
-    def has_parts(self, payload):
+    def has_parts(self, payload) -> bool:
         if 'parts' in payload:
             return True
         return False

@@ -9,7 +9,7 @@ MEGA_PASS = os.getenv('MEGA_PASS')
 MEGA_FOLDER = os.getenv('MEGA_FOLDER')
 
 class MegaFile:
-    def __init__(self, file, user=MEGA_USER, password=MEGA_PASS, folder=MEGA_FOLDER):
+    def __init__(self, file: str, user=MEGA_USER, password=MEGA_PASS, folder=MEGA_FOLDER):
         self.file = file
         self.user = user
         self.password = password
@@ -32,20 +32,20 @@ class MegaFile:
     #             raise ValueError(f"[{self.service_name}] Wrong username/password combination")
         
 
-    def get_link(self):
+    def get_link(self) -> str:
         if self.file_exists():
             print(f"[{self.service_name}] File '{self.file.split('/')[-1]}' is already uploaded.")
             return None
         print(f"[{self.service_name}] File uploaded successfully")
         return self.mega.get_upload_link(self.upload_file())
 
-    def find_folder(self):
+    def find_folder(self) -> str:
         folder = self.mega.find(self.folder)
         if folder is None:
             raise ValueError(f"[{self.service_name}] Couldn't find folder '{folder}'")
         return folder
 
-    def file_exists(self):
+    def file_exists(self) -> bool:
         if self.file is None:
             raise ValueError("[MEGA] File path is not passed")
         while True:
@@ -58,7 +58,7 @@ class MegaFile:
             return False
         return True
 
-    def upload_file(self):
+    def upload_file(self) -> object:
         return self.mega.upload(self.file, self.find_folder()[0])
 
 if __name__ == '__main__':

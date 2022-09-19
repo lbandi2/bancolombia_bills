@@ -8,7 +8,7 @@ from google.auth.transport.requests import Request
 # Request all access (permission to read/send/receive emails, manage the inbox, and more)
 SCOPES = ['https://mail.google.com/']
 
-def gmail_authenticate():
+def gmail_authenticate() -> object:
     creds = None
     # the file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first time
